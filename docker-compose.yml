@@ -1,0 +1,32 @@
+services:
+  nginx:
+    build: .
+    image: customopenresty
+    container_name: nginx_lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+    environment:
+      - AZURE_CLIENT_SECRET=QgzU/iCiLfZWCtZeowxLf1WzcWh7gl9jQ2GeQeiKusY=
+    depends_on:
+      - vdb_1
+      - vdb_2
+    networks:
+      - qdrant_net
+
+  vdb_1:
+    image: qdrant/qdrant:latest
+    container_name: vdb_1
+    networks:
+      - qdrant_net
+
+  vdb_2:
+    image: qdrant/qdrant:latest
+    container_name: vdb_2
+    networks:
+      - qdrant_net
+
+networks:
+  qdrant_net:
+    driver: bridge

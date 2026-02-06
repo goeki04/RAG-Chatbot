@@ -1,0 +1,62 @@
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    lua_package_path "/usr/local/openresty/luajit/lib/lua/5.1/?.lua;/usr/local/openresty/lualib/?.lua;;";
+    resolver 127.0.0.11;
+
+    upstream qdrant_cluster {
+        server vdb_1:6333;
+        server vdb_2:6333;
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            access_by_lua_block {
+                local jwt = require("resty.jwt")
+                
+                -- 1. Token aus dem Header holen
+                local auth_header = ngx.var.http_authorization
+                if not auth_header then
+                    ngx.status = 401
+                    ngx.say("Halt! Kein Ticket (Authorization Header) gefunden.")
+                    ngx.exit(401)
+                end
+
+                
+                local token = string.sub(auth_header, 8)
+                
+          
+                local jwt_obj = jwt:load_jwt(token)
+                
+                if not jwt_obj.valid then
+                    ngx.status = 401
+                    ngx.say("Ungueltiges Ticket!")
+                    ngx.exit(401)
+                end
+
+              
+                local tenant = jwt_obj.payload["tenant_id"] or "Unbekannt"
+                
+               
+                ngx.header["X-Debug-Tenant"] = tenant
+
+            
+                if tenant == "Unbekannt" then
+                    ngx.status = 403
+                    ngx.say("Zugriff verweigert fuer Tenant: " .. tenant)
+                    ngx.exit(403)
+                end
+            }
+
+            proxy_pass http://qdrant_cluster;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+}
