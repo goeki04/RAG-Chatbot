@@ -44,13 +44,11 @@ services:
     restart: on-failure
 
   chatbot:
-    image: mein-neuer-chatbot:latest  # Nutzt dein manuell gebautes Image
-    container_name: rag_chatbot
+    image: chatbot  # Nutzt dein manuell gebautes Image
     environment:
       - QDRANT_URL=http://vdb_1:6333
       - COLLECTION_NAME=datenbank_eins
       - OLLAMA_URL=http://host.docker.internal:11434
-      - HF_TOKEN=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
     depends_on:
       - vdb_1
     networks:
