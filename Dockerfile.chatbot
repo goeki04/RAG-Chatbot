@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir \
+    "langchain>=0.3.0" \
+    "langchain-community>=0.3.0" \
+    "langchain-core>=0.3.0" \
+    "langchain-ollama" \
+    "langchain-qdrant"
+RUN pip install --no-cache-dir \
+    streamlit \
+    fastembed \
+    qdrant-client \
+    python-dotenv
+
+COPY app.py .
+RUN python -c "from langchain_community.embeddings import FastEmbedEmbeddings; FastEmbedEmbeddings(model_name='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", \
+     "--server.address=0.0.0.0", \
+     "--server.port=8501", \
+     "--server.enableCORS=false"]

@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    langchain-qdrant \
+    qdrant-client \
+    langchain-community \
+    langchain-text-splitters \
+    pypdf \
+    python-dotenv \
+    beautifulsoup4 \
+    fastembed
+
+COPY qdrantLoader.py .
+
+RUN mkdir -p /app/data
+
+CMD ["python", "qdrantLoader.py"]

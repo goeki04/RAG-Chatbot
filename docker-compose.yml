@@ -8,10 +8,14 @@ services:
     volumes:
       - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     environment:
-      - AZURE_CLIENT_SECRET=QgzU/iCiLfZWCtZeowxLf1WzcWh7gl9jQ2GeQeiKusY=
+      - AZURE_CLIENT_SECRET=yTu8Q~1ggoRR5s4MoCAaWPAa.wf2kOA2zz_cAbDH
+      # WICHTIG: Bypass Proxy für interne Docker-Hosts
+      - NO_PROXY=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
+      - no_proxy=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
     depends_on:
       - vdb_1
       - vdb_2
+      - chatbot
     networks:
       - qdrant_net
 
@@ -27,6 +31,33 @@ services:
     networks:
       - qdrant_net
 
+  qdrant_loader:
+    build:
+      context: .
+      dockerfile: Dockerfile.loader
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      - NO_PROXY=vdb_1,vdb_2,localhost,127.0.0.1
+    networks:
+      - qdrant_net
+    restart: on-failure
+
+  chatbot:
+    image: mein-neuer-chatbot:latest  # Nutzt dein manuell gebautes Image
+    container_name: rag_chatbot
+    environment:
+      - QDRANT_URL=http://vdb_1:6333
+      - COLLECTION_NAME=datenbank_eins
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - HF_TOKEN=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
+    depends_on:
+      - vdb_1
+    networks:
+      - qdrant_net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
 networks:
   qdrant_net:
     driver: bridge
