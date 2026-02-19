@@ -17,9 +17,6 @@ no_proxy = os.getenv('NO_PROXY', '') + ',vdb_1,vdb_2,localhost,127.0.0.1'
 os.environ['NO_PROXY'] = no_proxy
 os.environ['no_proxy'] = no_proxy
 
-print("⏳ Warte 5 Sekunden auf Qdrant-Start...")
-time.sleep(5)
-print(" Lade Embedding-Model...")
 embeddings = FastEmbedEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
@@ -93,5 +90,3 @@ if __name__ == "__main__":
         "datenbank_zwei",
         file_pattern="**/*.pdf"
     )
-    
-    print("FERTIG! Beide Datenbanken sind geladen.")
