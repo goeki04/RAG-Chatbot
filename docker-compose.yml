@@ -9,7 +9,6 @@ services:
       - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     environment:
       - AZURE_CLIENT_SECRET=yTu8Q~1ggoRR5s4MoCAaWPAa.wf2kOA2zz_cAbDH
-      # WICHTIG: Bypass Proxy für interne Docker-Hosts
       - NO_PROXY=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
       - no_proxy=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
     depends_on:
@@ -44,11 +43,12 @@ services:
     restart: on-failure
 
   chatbot:
-    image: chatbot  # Nutzt dein manuell gebautes Image
+    image: chatbot
     environment:
       - QDRANT_URL=http://vdb_1:6333
       - COLLECTION_NAME=datenbank_eins
       - OLLAMA_URL=http://host.docker.internal:11434
+      - STREAMLIT_SERVER_BASE_PATH=/chat
     depends_on:
       - vdb_1
     networks:

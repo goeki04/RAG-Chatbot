@@ -4,4 +4,4 @@ Thumbs.db
 /venv/
 /data/
 .env
-
+.pem
