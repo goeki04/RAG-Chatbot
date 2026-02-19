@@ -9,7 +9,7 @@ st.title("CatGPT says Hello!")
 
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 #embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-
+#
 #vectorstore = QdrantVectorStore(client=client, collection_name="Berichtsheft", embeddings=embeddings)
 #retriever = vectorstore.as_retriever()
 if "messages" not in st.session_state:
