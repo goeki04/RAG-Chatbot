@@ -20,7 +20,6 @@ http {
             access_by_lua_block {
                 local jwt = require("resty.jwt")
                 
-                -- 1. Token aus dem Header holen
                 local auth_header = ngx.var.http_authorization
                 if not auth_header then
                     ngx.status = 401

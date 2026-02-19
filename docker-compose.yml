@@ -44,6 +44,9 @@ services:
 
   chatbot:
     image: chatbot
+    volumes:
+      - ./app.py:/app/app.py
+    command: streamlit run app.py --server.address=0.0.0.0 --server.baseUrlPath=/chat/ --server.fileWatcherType poll
     environment:
       - QDRANT_URL=http://vdb_1:6333
       - COLLECTION_NAME=datenbank_eins

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir streamlit requests
+RUN pip install langchain-community
 COPY app.py .
 
 EXPOSE 8501
