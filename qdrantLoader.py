@@ -17,6 +17,18 @@ no_proxy = os.getenv('NO_PROXY', '') + ',vdb_1,vdb_2,localhost,127.0.0.1'
 os.environ['NO_PROXY'] = no_proxy
 os.environ['no_proxy'] = no_proxy
 
+def wait_for_qdrant(url, attempts=15):
+    client = QdrantClient(url=url)
+    for i in range(attempts):
+        try:
+            client.get_collections()
+            print(f" Qdrant ({url}) ist bereit!")
+            return True
+        except Exception:
+            print(f" Versuche {i+1}/{attempts}: Warte auf Qdrant...")
+            time.sleep(2)
+    return False
+
 embeddings = FastEmbedEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
@@ -75,18 +87,19 @@ def ingest_to_collection(target_url, data_path, collection_name, file_pattern="*
     print(f"Erfolgreich {len(docs)} Chunks in '{collection_name}' gespeichert!\n")
 
 if __name__ == "__main__":
-    data_dir = "/app/data"
-    
-    ingest_to_collection(
-        "http://vdb_1:6333",
-        f"{data_dir}/db1",
-        "datenbank_eins",
-        file_pattern="**/*.pdf"
-    )
-    
-    ingest_to_collection(
-        "http://vdb_2:6333",
-        f"{data_dir}/db2",
-        "datenbank_zwei",
-        file_pattern="**/*.pdf"
-    )
+    if wait_for_qdrant("http://vdb_1:6333") and wait_for_qdrant("http://vdb_2:6333"):
+        data_dir = "/app/data"
+        
+        ingest_to_collection(
+            "http://vdb_1:6333",
+            f"{data_dir}/db1",
+            "datenbank_eins",
+            file_pattern="**/*.pdf"
+        )
+        
+        ingest_to_collection(
+            "http://vdb_2:6333",
+            f"{data_dir}/db2",
+            "datenbank_zwei",
+            file_pattern="**/*.pdf"
+        )

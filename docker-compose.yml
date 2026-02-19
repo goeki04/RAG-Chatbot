@@ -23,24 +23,12 @@ services:
     container_name: vdb_1
     networks:
       - qdrant_net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
-      interval: 3s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
 
   vdb_2:
     image: qdrant/qdrant:latest
     container_name: vdb_2
     networks:
       - qdrant_net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
-      interval: 3s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
 
   qdrant_loader:
     build:
@@ -53,11 +41,6 @@ services:
     networks:
       - qdrant_net
     restart: on-failure
-    depends_on:
-      vdb_1:
-        condition: service_healthy
-      vdb_2:
-        condition: service_healthy
 
   chatbot:
     image: chatbot
