@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import os
 from langchain_community.llms import Ollama
-#from qdrant_client import QdrantClient
-#from langchain_community.embeddings import FastEmbedEmbeddings
+from qdrant_client import QdrantClient
+from langchain_community.embeddings import FastEmbedEmbeddings
 
 st.title("CatGPT says Hello!")
 

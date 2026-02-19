@@ -44,6 +44,8 @@ services:
 
   chatbot:
     image: chatbot
+    build:
+      dockerfile: Dockerfile.chatbot
     volumes:
       - ./app.py:/app/app.py
     command: streamlit run app.py --server.address=0.0.0.0 --server.baseUrlPath=/chat/ --server.fileWatcherType poll
