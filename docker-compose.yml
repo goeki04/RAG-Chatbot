@@ -48,12 +48,16 @@ services:
       dockerfile: Dockerfile.chatbot
     volumes:
       - ./app.py:/app/app.py
+      - fastembed_data:/tmp/fastembed_cache
+      - ./data/db1:/app/data/db1
+      - ./data/db2:/app/data/db2
     command: streamlit run app.py --server.address=0.0.0.0 --server.baseUrlPath=/chat/ --server.fileWatcherType poll
     environment:
       - QDRANT_URL=http://vdb_1:6333
       - COLLECTION_NAME=datenbank_eins
       - OLLAMA_URL=http://host.docker.internal:11434
       - STREAMLIT_SERVER_BASE_PATH=/chat
+      - no_proxy=vdb_1,vdb_2,chatbot,localhost,127.0.0.1
     depends_on:
       - vdb_1
     networks:
@@ -61,6 +65,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+volumes:
+  fastembed_data:
 networks:
   qdrant_net:
     driver: bridge

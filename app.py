@@ -3,14 +3,29 @@ import requests
 import os
 from langchain_community.llms import Ollama
 from qdrant_client import QdrantClient
+from langchain_qdrant import QdrantVectorStore
 from langchain_community.embeddings import FastEmbedEmbeddings
-
+os.environ["FASTEMBED_CACHE_PATH"] = "/tmp/fastembed_cache"
 st.title("CatGPT says Hello!")
 
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-#embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-#
-#vectorstore = QdrantVectorStore(client=client, collection_name="Berichtsheft", embeddings=embeddings)
+embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+client =QdrantClient(host="vdb_1", port=6333)
+
+collection_name = "Berichtsheft"
+
+if not client.collection_exists(collection_name):
+    from qdrant_client.http import models
+    client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(
+            size=384, # Größe für paraphrase-multilingual-MiniLM-L12-v2
+            distance=models.Distance.COSINE
+        ),
+    )
+    st.info(f"Collection '{collection_name}' wurde neu erstellt.")
+
+vectorstore = QdrantVectorStore(client=client, collection_name="Berichtsheft", embedding=embeddings)
 #retriever = vectorstore.as_retriever()
 if "messages" not in st.session_state:
     st.session_state.messages = []

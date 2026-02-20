@@ -12,8 +12,10 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir \
     streamlit \
     requests \
+    fastembed \
     langchain-community \
-    qdrant-client
+    qdrant-client \
+    langchain-qdrant
 COPY app.py .
 
 EXPOSE 8501
