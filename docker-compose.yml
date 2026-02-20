@@ -42,6 +42,22 @@ services:
       - qdrant_net
     restart: on-failure
 
+  ollama:
+      image: ollama/ollama:latest
+      container_name: ollama
+      volumes:
+        - ollama_storage:/root/.ollama
+        - /etc/ssl/certs/your-proxy-ca.crt:/usr/local/share/ca-certificates/proxy-ca.crt
+      networks:
+        - qdrant_net
+      ports:
+        - "11434:11434"
+      environment:
+        - OLLAMA_VULKAN=1
+        - no_proxy=localhost,127.0.0.1,ollama,chatbot,vdb_1
+        - NO_PROXY=localhost,127.0.0.1,ollama,chatbot,vdb_1
+        - HTTP_PROXY=http://172.17.0.1:3129
+        - HTTPS_PROXY=http://172.17.0.1:3129
   chatbot:
     image: chatbot
     build:
@@ -55,9 +71,9 @@ services:
     environment:
       - QDRANT_URL=http://vdb_1:6333
       - COLLECTION_NAME=datenbank_eins
-      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_URL=http://ollama:11434
       - STREAMLIT_SERVER_BASE_PATH=/chat
-      - no_proxy=vdb_1,vdb_2,chatbot,localhost,127.0.0.1
+      - no_proxy=vdb_1,vdb_2,ollama,chatbot,localhost,127.0.0.1
     depends_on:
       - vdb_1
     networks:
@@ -67,6 +83,8 @@ services:
     restart: unless-stopped
 volumes:
   fastembed_data:
+  ollama_storage:
 networks:
   qdrant_net:
     driver: bridge
+
