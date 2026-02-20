@@ -20,12 +20,16 @@ services:
   vdb_1:
     image: qdrant/qdrant:latest
     container_name: vdb_1
+    volumes:
+          - qdrant_data_1:/qdrant/storage # Verweist auf die Definition unten
     networks:
       - qdrant_net
 
   vdb_2:
     image: qdrant/qdrant:latest
     container_name: vdb_2
+    volumes:
+      - qdrant_data_2:/qdrant/storage
     networks:
       - qdrant_net
 
@@ -80,6 +84,8 @@ services:
 volumes:
   fastembed_data:
   ollama_storage:
+  qdrant_data_1:
+  qdrant_data_2:
 networks:
   qdrant_net:
     driver: bridge
