@@ -8,9 +8,8 @@ services:
     volumes:
       - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     environment:
-      - AZURE_CLIENT_SECRET=yTu8Q~1ggoRR5s4MoCAaWPAa.wf2kOA2zz_cAbDH
-      - NO_PROXY=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
-      - no_proxy=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1,172.*,192.168.*
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - no_proxy=chatbot,rag_chatbot,vdb_1,vdb_2,localhost,127.0.0.1
     depends_on:
       - vdb_1
       - vdb_2
@@ -37,7 +36,7 @@ services:
     volumes:
       - ./data:/app/data:ro
     environment:
-      - NO_PROXY=vdb_1,vdb_2,localhost,127.0.0.1
+      - no_proxy=vdb_1,vdb_2,localhost,127.0.0.1
     networks:
       - qdrant_net
     restart: on-failure
@@ -53,11 +52,8 @@ services:
       ports:
         - "11434:11434"
       environment:
-        - OLLAMA_VULKAN=1
-        - no_proxy=localhost,127.0.0.1,ollama,chatbot,vdb_1
-        - NO_PROXY=localhost,127.0.0.1,ollama,chatbot,vdb_1
-        - HTTP_PROXY=http://172.17.0.1:3129
-        - HTTPS_PROXY=http://172.17.0.1:3129
+        - no_proxy=localhost,127.0.0.1,ollama,chatbot,vdb_1,vdb_2
+
   chatbot:
     image: chatbot
     build:
@@ -76,10 +72,10 @@ services:
       - no_proxy=vdb_1,vdb_2,ollama,chatbot,localhost,127.0.0.1
     depends_on:
       - vdb_1
+      - vdb_2
+      - ollama
     networks:
       - qdrant_net
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 volumes:
   fastembed_data:
