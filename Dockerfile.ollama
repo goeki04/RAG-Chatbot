@@ -1,8 +1,0 @@
-FROM ollama/ollama:latest
-RUN apt-get update && apt-get install -y \
-    libvulkan1 \
-    mesa-vulkan-drivers \
-    intel-media-va-driver-non-free \
-    vainfo \
-    && rm -rf /var/lib/apt/lists/*
-ENV OLLAMA_VULKAN=1

@@ -118,7 +118,7 @@ if prompt := st.chat_input("Frag mich etwas über deine Dokumente..."):
         try:
             res = requests.post(
                 f"{OLLAMA_URL}/api/generate",
-                json={"model": "llama3", "prompt": full_prompt, "stream": True},
+                json={"model": "llama3.2:3b", "prompt": full_prompt, "stream": True},
                 stream=True
             )
             
