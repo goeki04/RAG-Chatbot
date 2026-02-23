@@ -69,8 +69,6 @@ services:
       - ./data/db2:/app/data/db2
     command: streamlit run app.py --server.address=0.0.0.0 --server.baseUrlPath=/chat/ --server.fileWatcherType poll
     environment:
-      - QDRANT_URL=http://vdb_1:6333
-      - COLLECTION_NAME=datenbank_eins
       - OLLAMA_URL=http://ollama:11434
       - STREAMLIT_SERVER_BASE_PATH=/chat
       - no_proxy=vdb_1,vdb_2,ollama,chatbot,localhost,127.0.0.1

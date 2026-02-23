@@ -11,6 +11,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 os.environ["FASTEMBED_CACHE_PATH"] = "/tmp/fastembed_cache"
 
+VDB_SOURCES = [
+    {"host": "vdb_1", "collection": "datenbank_eins"},
+    {"host": "vdb_2", "collection": "datenbank_zwei"}
+]
+
 st.set_page_config(page_title="CatGPT", layout="wide")
 st.title("🐱 CatGPT says Hello!")
 
@@ -19,21 +24,25 @@ OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 @st.cache_resource
 def get_embeddings():
     return FastEmbedEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-
 embeddings = get_embeddings()
+@st.cache_resource
+def get_all_vectorstores(_embeddings):
+    vectorstores = []
+    for source in VDB_SOURCES:
+        client = QdrantClient(host=source["host"], port=6333)
+        if not client.collection_exists(source["collection"]):
+            client.create_collection(
+                collection_name=source["collection"],
+                vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
+            )
+        vs = QdrantVectorStore(client=client, collection_name=source["collection"], embedding=_embeddings)
+        vectorstores.append(vs)
+    return vectorstores
 
-client = QdrantClient(host="vdb_1", port=6333)
-collection_name = "Berichtsheft"
 
-if not client.collection_exists(collection_name):
-    client.create_collection(
-        collection_name=collection_name,
-        vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
-    )
+vectorstores = get_all_vectorstores(embeddings)
 
-vectorstore = QdrantVectorStore(client=client, collection_name=collection_name, embedding=embeddings)
-
-def ingest_pdfs(folder_path):
+def ingest_pdfs(folder_path, target_vectorstore): 
     with st.spinner(f"Verarbeite PDFs aus {folder_path}..."):
         loader = PyPDFDirectoryLoader(folder_path)
         docs = loader.load()
@@ -45,26 +54,28 @@ def ingest_pdfs(folder_path):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = text_splitter.split_documents(docs)
         
-        vectorstore.add_documents(chunks)
-        st.sidebar.success(f"✅ {len(chunks)} Abschnitte importiert!")
+        target_vectorstore.add_documents(chunks)
+        st.sidebar.success(f" {len(chunks)} Abschnitte importiert!")
 
 with st.sidebar:
     st.header("⚙️ Verwaltung")
     if st.button("📚 Daten aus db1 einlesen"):
-        ingest_pdfs("/app/data/db1")
+        ingest_pdfs("/app/data/db1", vectorstores[0])
     
     if st.button("📚 Daten aus db2 einlesen"):
-        ingest_pdfs("/app/data/db2")
+        ingest_pdfs("/app/data/db2", vectorstores[1])
     
-    if st.button("🗑️ Datenbank leeren"):
-        if client.collection_exists(collection_name):
-            client.delete_collection(collection_name)
-        
-        client.create_collection(
-            collection_name=collection_name,
-            vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
-        )
-        st.sidebar.success("Datenbank blitzblank geputzt! Klicke jetzt auf 'Daten einlesen'.")
+    if st.button("🗑️ Datenbanken leeren"):
+        for source in VDB_SOURCES:
+            tmp_client = QdrantClient(host=source["host"], port=6333)
+            if tmp_client.collection_exists(source["collection"]):
+                tmp_client.delete_collection(source["collection"])
+            tmp_client.create_collection(
+                collection_name=source["collection"],
+                vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
+            )
+        st.cache_resource.clear()
+        st.sidebar.success("Beide Datenbanken blitzblank geputzt!")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -73,12 +84,22 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Frag mich etwas über dein Berichtsheft..."):
+if prompt := st.chat_input("Frag mich etwas über deine Dokumente..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-
-    docs = vectorstore.similarity_search(prompt, k=4)
+    
+    all_results = []
+    for vs in vectorstores:
+        results = vs.similarity_search_with_score(prompt, k=3)
+        all_results.extend(results)
+    
+    all_results.sort(key=lambda x: x[1], reverse=True)
+    
+    top_results = all_results[:4]
+    
+    docs = [doc for doc, score in top_results]
+    
     context = "\n---\n".join([doc.page_content for doc in docs])
 
     full_prompt = f"""Du bist ein intelligenter Assistent für einen Angestellten. 
@@ -110,10 +131,10 @@ if prompt := st.chat_input("Frag mich etwas über dein Berichtsheft..."):
             response_placeholder.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
-            if docs:
+            if top_results:
                 with st.expander("Verwendete Quellen & Debug-Info"):
-                    for doc in docs:
-                        st.write(f"- {doc.metadata.get('source', 'Unbekannt')}")
+                    for doc, score in top_results:
+                        st.write(f"- **Score: {score:.4f}** | {doc.metadata.get('source', 'Unbekannt')}")
                     
                     st.divider()
                     st.markdown("**Das hat die KI tatsächlich gelesen:**")
