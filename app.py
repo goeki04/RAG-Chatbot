@@ -48,24 +48,24 @@ def ingest_pdfs(folder_path, target_vectorstore):
         docs = loader.load()
         
         if not docs:
-            st.error(f"Keine Dateien in {folder_path} gefunden!")
+            st.error(f"No files found in {folder_path}!")
             return
 
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = text_splitter.split_documents(docs)
         
         target_vectorstore.add_documents(chunks)
-        st.sidebar.success(f" {len(chunks)} Abschnitte importiert!")
+        st.sidebar.success(f" {len(chunks)} Imported Chunks!")
 
 with st.sidebar:
-    st.header("⚙️ Verwaltung")
-    if st.button("📚 Daten aus db1 einlesen"):
+    st.header("⚙️ Management")
+    if st.button("📚 Read from db1"):
         ingest_pdfs("/app/data/db1", vectorstores[0])
     
-    if st.button("📚 Daten aus db2 einlesen"):
+    if st.button("📚 Read from db2 einlesen"):
         ingest_pdfs("/app/data/db2", vectorstores[1])
     
-    if st.button("🗑️ Datenbanken leeren"):
+    if st.button("🗑️ Empty DB"):
         for source in VDB_SOURCES:
             tmp_client = QdrantClient(host=source["host"], port=6333)
             if tmp_client.collection_exists(source["collection"]):
@@ -75,7 +75,7 @@ with st.sidebar:
                 vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
             )
         st.cache_resource.clear()
-        st.sidebar.success("Beide Datenbanken blitzblank geputzt!")
+        st.sidebar.success("Cleared both databases!")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -84,7 +84,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Frag mich etwas über deine Dokumente..."):
+if prompt := st.chat_input("Ask me something..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -102,7 +102,7 @@ if prompt := st.chat_input("Frag mich etwas über deine Dokumente..."):
     
     context = "\n---\n".join([doc.page_content for doc in docs])
 
-    full_prompt = f"""Du bist ein intelligenter Assistent für einen Angestellten. 
+    full_prompt = f"""Du bist ein intelligenter Assistent für einen Angestellten. Anworte in der Sprache in der dir die Frage gestellt wird. 
     Beantworte die Frage präzise und ausschließlich auf Basis der folgenden Informationen.
     
     INFORMATIONEN:
@@ -132,13 +132,13 @@ if prompt := st.chat_input("Frag mich etwas über deine Dokumente..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
             if top_results:
-                with st.expander("Verwendete Quellen & Debug-Info"):
+                with st.expander("Sources & Debug-Info"):
                     for doc, score in top_results:
-                        st.write(f"- **Score: {score:.4f}** | {doc.metadata.get('source', 'Unbekannt')}")
+                        st.write(f"- **Score: {score:.4f}** | {doc.metadata.get('source', 'unknown')}")
                     
                     st.divider()
-                    st.markdown("**Das hat die KI tatsächlich gelesen:**")
+                    st.markdown("**What did AI read?:**")
                     st.info(context)
                         
         except Exception as e:
-            st.error(f"Fehler: {e}")
+            st.error(f"Error: {e}")
